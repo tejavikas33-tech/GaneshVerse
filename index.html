@@ -1,0 +1,3213 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GANESHVERSE — The Festival Guardian</title>
+  <meta name="description"
+    content="An immersive 3D Indian Ganesh Chaturthi festival game. Walk the festival street, invite families, collect chanda, and celebrate with Lord Ganesha.">
+
+  <!-- Google Fonts: Cinzel for majestic Indian festival headings, Outfit for clean modern HUD -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Outfit:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet">
+
+  <style>
+    :root {
+      --gold: #ffd166;
+      --gold-glow: #ffb703;
+      --saffron: #f77f00;
+      --vermilion: #d62828;
+      --maroon: #540b0e;
+      --bg-dark: #0d0608;
+      --panel-bg: rgba(22, 10, 13, 0.88);
+      --card-border: rgba(255, 209, 102, 0.45);
+      --font-title: 'Cinzel', serif;
+      --font-ui: 'Outfit', sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg-dark);
+      color: #fff;
+      font-family: var(--font-ui);
+    }
+
+    #canvas-container {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* =========================================================
+       STAGE 0: WELCOME SCREEN OVERLAY
+    ========================================================= */
+    #welcome-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at center, rgba(84, 11, 14, 0.85) 0%, rgba(13, 6, 8, 0.96) 80%);
+      backdrop-filter: blur(12px);
+      transition: opacity 0.8s ease, visibility 0.8s ease;
+    }
+
+    #welcome-screen.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .welcome-card {
+      width: min(920px, 94vw);
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: clamp(24px, 4vw, 42px) clamp(18px, 4vw, 36px);
+      border-radius: 28px;
+      background: linear-gradient(160deg, rgba(46, 14, 18, 0.96) 0%, rgba(16, 7, 9, 0.98) 100%);
+      border: 2px solid var(--card-border);
+      box-shadow: 0 25px 80px rgba(0, 0, 0, 0.85), 0 0 50px rgba(247, 127, 0, 0.25);
+      text-align: center;
+      position: relative;
+      scrollbar-width: thin;
+      scrollbar-color: var(--gold) rgba(20, 8, 11, 0.6);
+    }
+
+    .welcome-card::-webkit-scrollbar,
+    .rules-modal-card::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .welcome-card::-webkit-scrollbar-track,
+    .rules-modal-card::-webkit-scrollbar-track {
+      background: rgba(20, 8, 11, 0.6);
+      border-radius: 8px;
+    }
+
+    .welcome-card::-webkit-scrollbar-thumb,
+    .rules-modal-card::-webkit-scrollbar-thumb {
+      background: linear-gradient(to bottom, #ffd166, #f77f00);
+      border-radius: 8px;
+    }
+
+    .om-badge {
+      font-family: var(--font-title);
+      font-size: 52px;
+      color: var(--gold);
+      text-shadow: 0 0 25px var(--gold-glow);
+      margin-bottom: 8px;
+      animation: pulseOm 3s ease-in-out infinite;
+    }
+
+    @keyframes pulseOm {
+
+      0%,
+      100% {
+        transform: scale(1);
+        opacity: 0.9;
+      }
+
+      50% {
+        transform: scale(1.08);
+        opacity: 1;
+        text-shadow: 0 0 35px #ffb703, 0 0 60px #f77f00;
+      }
+    }
+
+    .game-main-title {
+      font-family: var(--font-title);
+      font-size: clamp(36px, 6vw, 54px);
+      font-weight: 900;
+      letter-spacing: 3px;
+      background: linear-gradient(135deg, #fff7d6 0%, #ffd166 40%, #f77f00 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 6px;
+    }
+
+    .game-subtitle {
+      font-family: var(--font-title);
+      font-size: clamp(16px, 2.8vw, 22px);
+      color: #fce1b8;
+      letter-spacing: 5px;
+      text-transform: uppercase;
+      margin-bottom: 18px;
+    }
+
+    .game-tagline {
+      font-style: italic;
+      color: #ffd166;
+      font-size: 17px;
+      margin-bottom: 24px;
+      padding: 8px 18px;
+      background: rgba(255, 209, 102, 0.1);
+      border-radius: 20px;
+      display: inline-block;
+      border: 1px solid rgba(255, 209, 102, 0.25);
+    }
+
+    .game-description {
+      font-size: 15px;
+      line-height: 1.6;
+      color: #e2d2c5;
+      margin-bottom: 26px;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .controls-overview {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 30px;
+    }
+
+    .control-chip {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 209, 102, 0.25);
+      padding: 8px 16px;
+      border-radius: 12px;
+      font-size: 13px;
+      color: #f7dfc5;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-enter-festival {
+      font-family: var(--font-title);
+      font-size: 19px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: #1a080c;
+      background: linear-gradient(135deg, #ffe082 0%, #ffd166 45%, #f77f00 100%);
+      border: none;
+      padding: 18px 46px;
+      border-radius: 40px;
+      cursor: pointer;
+      box-shadow: 0 10px 30px rgba(247, 127, 0, 0.45);
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-enter-festival:hover {
+      transform: translateY(-3px) scale(1.04);
+      box-shadow: 0 14px 40px rgba(247, 127, 0, 0.65), 0 0 25px rgba(255, 209, 102, 0.6);
+    }
+
+    .btn-enter-festival:active {
+      transform: translateY(1px);
+    }
+
+    /* =========================================================
+       HOW TO PLAY & SACRED RULES GUIDE STYLES
+    ========================================================= */
+    .guide-tabs-bar {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin: 18px 0 22px;
+      flex-wrap: wrap;
+    }
+
+    .guide-tab-btn {
+      font-family: var(--font-title);
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      padding: 10px 22px;
+      border-radius: 24px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 209, 102, 0.3);
+      color: #fce1b8;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .guide-tab-btn:hover {
+      background: rgba(255, 209, 102, 0.15);
+      border-color: var(--gold);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(247, 127, 0, 0.3);
+    }
+
+    .guide-tab-btn.active {
+      background: linear-gradient(135deg, rgba(255, 209, 102, 0.28) 0%, rgba(247, 127, 0, 0.42) 100%);
+      border-color: var(--gold);
+      color: #fff;
+      box-shadow: 0 0 22px rgba(255, 209, 102, 0.45);
+    }
+
+    .guide-tab-content {
+      margin-bottom: 24px;
+      text-align: left;
+    }
+
+    .guide-pane {
+      display: none;
+      animation: fadeInGuide 0.3s ease forwards;
+    }
+
+    .guide-pane.active {
+      display: block;
+    }
+
+    @keyframes fadeInGuide {
+      from {
+        opacity: 0;
+        transform: translateY(6px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* How to Play Stage Grid */
+    .stage-guide-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      gap: 14px;
+    }
+
+    @media (max-width: 640px) {
+      .stage-guide-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .stage-guide-card {
+      background: rgba(30, 10, 14, 0.75);
+      border: 1px solid rgba(255, 209, 102, 0.25);
+      border-radius: 16px;
+      padding: 16px 18px;
+      transition: all 0.25s ease;
+      position: relative;
+      backdrop-filter: blur(8px);
+    }
+
+    .stage-guide-card:hover {
+      border-color: var(--gold);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(247, 127, 0, 0.22);
+      background: rgba(45, 14, 20, 0.85);
+    }
+
+    .stage-guide-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .stage-guide-step-pill {
+      font-size: 11px;
+      font-family: var(--font-title);
+      font-weight: 800;
+      letter-spacing: 1.5px;
+      padding: 3px 10px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #d62828, #f77f00);
+      color: #fff;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+    }
+
+    .stage-guide-title {
+      font-family: var(--font-title);
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--gold);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .stage-guide-desc {
+      font-size: 13.5px;
+      line-height: 1.6;
+      color: #f3e5d8;
+      margin-bottom: 10px;
+    }
+
+    .stage-guide-tip {
+      font-size: 12px;
+      line-height: 1.5;
+      color: #ffe49e;
+      background: rgba(255, 209, 102, 0.1);
+      border-left: 3px solid var(--gold);
+      padding: 6px 12px;
+      border-radius: 4px;
+    }
+
+    /* Rules of How to Play */
+    .rules-intro-banner {
+      background: linear-gradient(135deg, rgba(214, 40, 40, 0.25) 0%, rgba(247, 127, 0, 0.2) 100%);
+      border: 1px solid rgba(255, 209, 102, 0.35);
+      border-radius: 16px;
+      padding: 14px 18px;
+      margin-bottom: 16px;
+      text-align: center;
+      color: #ffe6a7;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .rules-guide-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      gap: 14px;
+    }
+
+    @media (max-width: 640px) {
+      .rules-guide-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .rule-guide-card {
+      background: rgba(30, 10, 14, 0.75);
+      border: 1px solid rgba(255, 209, 102, 0.25);
+      border-radius: 16px;
+      padding: 16px 18px;
+      transition: all 0.25s ease;
+      backdrop-filter: blur(8px);
+    }
+
+    .rule-guide-card:hover {
+      border-color: var(--gold);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(247, 127, 0, 0.22);
+      background: rgba(45, 14, 20, 0.85);
+    }
+
+    .rule-guide-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .rule-number-badge {
+      font-family: var(--font-title);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      color: var(--gold);
+      background: rgba(255, 209, 102, 0.16);
+      border: 1px solid rgba(255, 209, 102, 0.35);
+      padding: 3px 10px;
+      border-radius: 12px;
+      white-space: nowrap;
+    }
+
+    .rule-guide-title {
+      font-family: var(--font-title);
+      font-size: 15.5px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .rule-guide-body {
+      font-size: 13.5px;
+      line-height: 1.6;
+      color: #f0ddd0;
+    }
+
+    .rule-guide-highlight {
+      color: var(--gold);
+      font-weight: 600;
+    }
+
+    /* Controls Tab */
+    .controls-guide-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 14px;
+    }
+
+    .control-group-card {
+      background: rgba(30, 10, 14, 0.75);
+      border: 1px solid rgba(255, 209, 102, 0.25);
+      border-radius: 16px;
+      padding: 18px;
+    }
+
+    .control-group-title {
+      font-family: var(--font-title);
+      font-size: 16px;
+      color: var(--gold);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid rgba(255, 209, 102, 0.2);
+      padding-bottom: 8px;
+    }
+
+    .control-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: 13.5px;
+      color: #f0ddd0;
+    }
+
+    .control-row:last-child {
+      border-bottom: none;
+    }
+
+    .key-badge {
+      display: inline-block;
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 209, 102, 0.45);
+      border-radius: 6px;
+      padding: 2px 8px;
+      font-family: var(--font-ui);
+      font-weight: 700;
+      font-size: 12px;
+      color: var(--gold);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Rules In-Game Modal */
+    #rules-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 96;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(7, 2, 4, 0.88);
+      backdrop-filter: blur(14px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s ease;
+    }
+
+    #rules-modal.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .rules-modal-card {
+      width: min(920px, 94vw);
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: clamp(24px, 4vw, 36px);
+      border-radius: 28px;
+      background: linear-gradient(160deg, rgba(46, 14, 18, 0.98) 0%, rgba(16, 7, 9, 0.98) 100%);
+      border: 2px solid var(--card-border);
+      box-shadow: 0 30px 90px rgba(0, 0, 0, 0.9), 0 0 50px rgba(247, 127, 0, 0.3);
+      position: relative;
+      scrollbar-width: thin;
+      scrollbar-color: var(--gold) rgba(20, 8, 11, 0.6);
+    }
+
+    .rules-modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255, 209, 102, 0.25);
+      padding-bottom: 14px;
+      margin-bottom: 18px;
+    }
+
+    .rules-modal-title {
+      font-family: var(--font-title);
+      font-size: clamp(20px, 3.5vw, 26px);
+      font-weight: 800;
+      color: var(--gold);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-modal-close-icon {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 209, 102, 0.3);
+      color: #fce1b8;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+
+    .btn-modal-close-icon:hover {
+      background: rgba(214, 40, 40, 0.6);
+      border-color: #ff6b6b;
+      color: #fff;
+      transform: scale(1.1);
+    }
+
+    .welcome-actions {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    /* =========================================================
+       STAGE 1 HUD
+    ========================================================= */
+    #hud {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      z-index: 50;
+      width: min(340px, calc(100vw - 40px));
+      padding: 20px;
+      border-radius: 20px;
+      background: var(--panel-bg);
+      border: 1px solid var(--card-border);
+      backdrop-filter: blur(14px);
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.7);
+      transition: transform 0.3s ease, opacity 0.3s ease;
+    }
+
+    #hud.hidden {
+      opacity: 0;
+      transform: translateX(-30px);
+      pointer-events: none;
+    }
+
+    /* Sleek, non-intrusive compact HUD for Mandapam & Ceremony stages */
+    #hud.mandap-mode {
+      width: min(280px, calc(100vw - 40px));
+      padding: 12px 16px;
+      border-radius: 14px;
+      background: rgba(22, 10, 13, 0.78);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
+    }
+
+    #hud.mandap-mode .hud-stats-grid,
+    #hud.mandap-mode .hud-objective.house-guide {
+      display: none !important;
+    }
+
+    #hud.mandap-mode .hud-header {
+      margin-bottom: 8px;
+      padding-bottom: 6px;
+    }
+
+    #hud.mandap-mode .hud-title {
+      font-size: 15px;
+    }
+
+    #hud.mandap-mode .hud-objective {
+      padding: 6px 10px;
+      font-size: 12px;
+    }
+
+    .mandap-quick-stats {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 13px;
+      color: #ffd166;
+      font-weight: 600;
+    }
+
+    #hud.mandap-mode .mandap-quick-stats {
+      display: flex !important;
+    }
+
+    .hud-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255, 209, 102, 0.2);
+      padding-bottom: 10px;
+      margin-bottom: 12px;
+    }
+
+    .hud-title {
+      font-family: var(--font-title);
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      color: var(--gold);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .hud-stage-chip {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      background: rgba(247, 127, 0, 0.25);
+      color: #ffa726;
+      padding: 4px 10px;
+      border-radius: 12px;
+      border: 1px solid rgba(247, 127, 0, 0.4);
+      font-weight: 600;
+    }
+
+    .hud-stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .hud-stat-box {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 209, 102, 0.15);
+      padding: 10px;
+      border-radius: 12px;
+    }
+
+    .hud-stat-label {
+      font-size: 11px;
+      color: #cfb9a8;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 3px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .hud-stat-value {
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .hud-stat-value.gold {
+      color: var(--gold);
+    }
+
+    .hud-objective {
+      background: rgba(247, 127, 0, 0.12);
+      border-left: 3px solid var(--gold);
+      padding: 8px 12px;
+      border-radius: 0 8px 8px 0;
+      font-size: 12.5px;
+      line-height: 1.4;
+      color: #f7e6d2;
+    }
+
+    .hud-objective strong {
+      color: var(--gold);
+    }
+
+    /* Top Right Bar */
+    #top-right-bar {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 50;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .hud-icon-btn {
+      background: var(--panel-bg);
+      border: 1px solid var(--card-border);
+      color: var(--gold);
+      font-size: 14px;
+      padding: 10px 16px;
+      border-radius: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      backdrop-filter: blur(10px);
+      font-family: var(--font-ui);
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+
+    .hud-icon-btn:hover {
+      background: rgba(54, 21, 26, 0.95);
+      border-color: var(--gold);
+      transform: translateY(-2px);
+    }
+
+    /* Bottom Movement Hint */
+    #controls-hint {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 50;
+      background: rgba(18, 7, 10, 0.85);
+      border: 1px solid rgba(255, 209, 102, 0.3);
+      padding: 9px 22px;
+      border-radius: 30px;
+      font-size: 13px;
+      color: #ebd3be;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .key-badge {
+      background: rgba(255, 209, 102, 0.2);
+      border: 1px solid rgba(255, 209, 102, 0.5);
+      color: var(--gold);
+      padding: 2px 7px;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 11px;
+    }
+
+    /* =========================================================
+       INTERACTION PROMPT (3D PROXIMITY)
+    ========================================================= */
+    #interaction-prompt {
+      position: fixed;
+      bottom: 75px;
+      left: 50%;
+      transform: translateX(-50%) scale(0.9);
+      z-index: 60;
+      background: linear-gradient(135deg, rgba(84, 11, 14, 0.95), rgba(28, 9, 12, 0.95));
+      border: 2px solid var(--gold);
+      box-shadow: 0 0 25px rgba(255, 209, 102, 0.45);
+      padding: 12px 28px;
+      border-radius: 35px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    #interaction-prompt.visible {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateX(-50%) scale(1);
+    }
+
+    #interaction-prompt:hover {
+      transform: translateX(-50%) scale(1.05);
+      background: linear-gradient(135deg, rgba(120, 18, 22, 0.98), rgba(40, 12, 16, 0.98));
+    }
+
+    .prompt-text {
+      font-size: 15px;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .prompt-text span {
+      color: var(--gold);
+    }
+
+    /* =========================================================
+       FAMILY DIALOGUE MODAL
+    ========================================================= */
+    #dialogue-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 80;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(6, 2, 4, 0.75);
+      backdrop-filter: blur(8px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    #dialogue-modal.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .dialogue-card {
+      width: min(580px, 92vw);
+      padding: 34px 30px;
+      border-radius: 24px;
+      background: linear-gradient(155deg, rgba(46, 14, 18, 0.97) 0%, rgba(18, 7, 10, 0.98) 100%);
+      border: 2px solid var(--card-border);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.85), 0 0 35px rgba(247, 127, 0, 0.2);
+      text-align: center;
+      transform: scale(0.95);
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    #dialogue-modal.active .dialogue-card {
+      transform: scale(1);
+    }
+
+    .dialogue-family-title {
+      font-family: var(--font-title);
+      font-size: 26px;
+      font-weight: 800;
+      color: var(--gold);
+      margin-bottom: 4px;
+    }
+
+    .dialogue-family-subtitle {
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: #f7a072;
+      margin-bottom: 20px;
+    }
+
+    .dialogue-speech-box {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 16px;
+      padding: 18px 20px;
+      border: 1px solid rgba(255, 209, 102, 0.2);
+      margin-bottom: 24px;
+      text-align: left;
+    }
+
+    .speech-line {
+      font-size: 16px;
+      line-height: 1.55;
+      color: #fff2e0;
+      margin-bottom: 10px;
+    }
+
+    .speech-line:last-child {
+      margin-bottom: 0;
+    }
+
+    .chanda-offer-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 209, 102, 0.15);
+      border: 1px solid var(--gold);
+      padding: 10px 22px;
+      border-radius: 30px;
+      font-size: 19px;
+      font-weight: 700;
+      color: var(--gold);
+      margin-bottom: 24px;
+    }
+
+    .btn-collect-chanda {
+      width: 100%;
+      font-family: var(--font-title);
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: #1a080c;
+      background: linear-gradient(135deg, #ffe082 0%, #ffd166 45%, #f77f00 100%);
+      border: none;
+      padding: 16px 28px;
+      border-radius: 16px;
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(247, 127, 0, 0.4);
+      transition: all 0.25s ease;
+    }
+
+    .btn-collect-chanda:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 30px rgba(247, 127, 0, 0.6);
+    }
+
+    /* =========================================================
+       STAGE 1 COMPLETION MODAL
+    ========================================================= */
+    #stage1-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 95;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(7, 2, 4, 0.85);
+      backdrop-filter: blur(12px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.5s ease;
+    }
+
+    #stage1-modal.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .stage1-card {
+      width: min(650px, 92vw);
+      padding: 40px 36px;
+      border-radius: 28px;
+      background: linear-gradient(150deg, rgba(58, 14, 20, 0.98) 0%, rgba(18, 6, 9, 0.98) 100%);
+      border: 2px solid var(--gold);
+      box-shadow: 0 30px 90px rgba(0, 0, 0, 0.9), 0 0 60px rgba(255, 209, 102, 0.35);
+      text-align: center;
+    }
+
+    .celebration-icon {
+      font-size: 54px;
+      margin-bottom: 12px;
+      animation: bounceCelebration 1.2s ease infinite alternate;
+    }
+
+    @keyframes bounceCelebration {
+      0% {
+        transform: scale(1) translateY(0);
+      }
+
+      100% {
+        transform: scale(1.12) translateY(-8px);
+      }
+    }
+
+    .stage1-title {
+      font-family: var(--font-title);
+      font-size: clamp(26px, 4.5vw, 36px);
+      font-weight: 900;
+      color: var(--gold);
+      margin-bottom: 8px;
+    }
+
+    .stage1-subtitle {
+      font-size: 16px;
+      color: #f7dfc5;
+      margin-bottom: 24px;
+    }
+
+    .completion-stats {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      margin-bottom: 28px;
+      flex-wrap: wrap;
+    }
+
+    .stat-badge {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 209, 102, 0.3);
+      padding: 14px 22px;
+      border-radius: 16px;
+      min-width: 140px;
+    }
+
+    .stat-badge-label {
+      font-size: 12px;
+      text-transform: uppercase;
+      color: #fce1b8;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+
+    .stat-badge-value {
+      font-family: var(--font-title);
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--gold);
+    }
+
+    .next-stage-box {
+      background: rgba(247, 127, 0, 0.15);
+      border: 1px solid rgba(247, 127, 0, 0.4);
+      padding: 16px;
+      border-radius: 16px;
+      margin-bottom: 28px;
+      font-size: 15px;
+      color: #ffe6c7;
+      line-height: 1.5;
+    }
+
+    .next-stage-box strong {
+      color: var(--gold);
+      display: block;
+      font-family: var(--font-title);
+      font-size: 17px;
+      margin-bottom: 4px;
+    }
+
+    .btn-stage-complete {
+      font-family: var(--font-title);
+      font-size: 17px;
+      font-weight: 700;
+      color: #1a080c;
+      background: linear-gradient(135deg, #ffe082 0%, #ffd166 45%, #f77f00 100%);
+      border: none;
+      padding: 16px 36px;
+      border-radius: 30px;
+      cursor: pointer;
+      box-shadow: 0 10px 30px rgba(247, 127, 0, 0.5);
+      transition: all 0.25s ease;
+    }
+
+    .btn-stage-complete:hover {
+      transform: translateY(-2px) scale(1.03);
+      box-shadow: 0 14px 40px rgba(247, 127, 0, 0.7);
+    }
+
+    /* =========================================================
+       TOAST NOTIFICATION
+    ========================================================= */
+    #toast-msg {
+      position: fixed;
+      top: 30px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-50px);
+      background: linear-gradient(135deg, rgba(139, 24, 33, 0.96), rgba(60, 10, 14, 0.96));
+      border: 1px solid var(--gold);
+      color: #fff;
+      padding: 12px 28px;
+      border-radius: 30px;
+      font-size: 14px;
+      font-weight: 600;
+      z-index: 120;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    #toast-msg.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    /* =========================================================
+       STAGE 2: FESTIVAL MAP MODAL
+    ========================================================= */
+    #festival-map-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 90;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(8, 3, 5, 0.82);
+      backdrop-filter: blur(10px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    #festival-map-modal.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .map-card {
+      width: min(880px, 94vw);
+      max-height: 92vh;
+      overflow-y: auto;
+      padding: 28px 32px;
+      border-radius: 24px;
+      background: linear-gradient(160deg, rgba(46, 12, 16, 0.98) 0%, rgba(16, 6, 8, 0.98) 100%);
+      border: 2px solid var(--gold);
+      box-shadow: 0 25px 80px rgba(0, 0, 0, 0.9), 0 0 50px rgba(255, 209, 102, 0.25);
+      position: relative;
+    }
+
+    .modal-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+
+    .modal-close-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--card-border);
+      color: var(--gold);
+      font-size: 20px;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+
+    .modal-close-btn:hover {
+      background: rgba(214, 40, 40, 0.4);
+      transform: scale(1.1);
+    }
+
+    .map-canvas-wrapper {
+      position: relative;
+      width: 100%;
+      background: #14080a;
+      border: 1px solid rgba(255, 209, 102, 0.3);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: inset 0 0 25px rgba(0, 0, 0, 0.8);
+      display: flex;
+      justify-content: center;
+    }
+
+    #festival-map-canvas {
+      display: block;
+      width: 100%;
+      max-width: 820px;
+      height: 380px;
+    }
+
+    .map-controls-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 18px;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .map-destination-info {
+      flex: 1;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 209, 102, 0.25);
+      border-radius: 14px;
+      padding: 12px 18px;
+      font-size: 14px;
+    }
+
+    .btn-map-nav {
+      font-family: var(--font-title);
+      font-size: 14px;
+      font-weight: 700;
+      color: #1a080c;
+      background: linear-gradient(135deg, #ffe082 0%, #ffd166 50%, #f77f00 100%);
+      border: none;
+      padding: 12px 24px;
+      border-radius: 25px;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(247, 127, 0, 0.4);
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .btn-map-nav:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(247, 127, 0, 0.6);
+    }
+
+    /* =========================================================
+       STAGE 2: GANESHA MURTI SHOP & 3D INSPECTION MODAL
+    ========================================================= */
+    #murti-shop-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 95;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(6, 2, 4, 0.88);
+      backdrop-filter: blur(12px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    #murti-shop-modal.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .shop-card {
+      width: min(1040px, 95vw);
+      max-height: 94vh;
+      overflow-y: auto;
+      padding: 28px 32px;
+      border-radius: 28px;
+      background: linear-gradient(160deg, rgba(48, 12, 17, 0.98) 0%, rgba(14, 5, 7, 0.98) 100%);
+      border: 2px solid var(--gold);
+      box-shadow: 0 30px 90px rgba(0, 0, 0, 0.95), 0 0 60px rgba(255, 209, 102, 0.3);
+      position: relative;
+    }
+
+    .shop-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      border-bottom: 1px solid rgba(255, 209, 102, 0.2);
+      padding-bottom: 16px;
+    }
+
+    .shop-title-box h2 {
+      font-family: var(--font-title);
+      font-size: clamp(22px, 3.2vw, 30px);
+      color: var(--gold);
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+
+    .shop-title-box p {
+      font-size: 14px;
+      color: #ffd6a5;
+    }
+
+    .shop-chanda-chip {
+      background: rgba(255, 209, 102, 0.12);
+      border: 1px solid var(--gold);
+      padding: 10px 20px;
+      border-radius: 20px;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--gold);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .shop-layout-grid {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    @media (max-width: 860px) {
+      .shop-layout-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .inspection-container {
+      background: #0d0507;
+      border: 1px solid rgba(255, 209, 102, 0.35);
+      border-radius: 20px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+    }
+
+    #idol-inspect-canvas {
+      width: 100%;
+      height: 380px;
+      display: block;
+      cursor: grab;
+    }
+
+    #idol-inspect-canvas:active {
+      cursor: grabbing;
+    }
+
+    .inspect-hint-bar {
+      position: absolute;
+      bottom: 12px;
+      left: 12px;
+      right: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(18, 7, 10, 0.75);
+      backdrop-filter: blur(6px);
+      padding: 6px 14px;
+      border-radius: 12px;
+      font-size: 12px;
+      color: #f7dfc5;
+      pointer-events: none;
+    }
+
+    .inspect-controls {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      display: flex;
+      gap: 8px;
+      z-index: 2;
+    }
+
+    .btn-inspect-tool {
+      background: rgba(22, 9, 12, 0.85);
+      border: 1px solid rgba(255, 209, 102, 0.4);
+      color: var(--gold);
+      font-size: 13px;
+      padding: 6px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-inspect-tool:hover {
+      background: rgba(84, 11, 14, 0.95);
+      border-color: var(--gold);
+    }
+
+    .idol-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .idol-card {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 209, 102, 0.25);
+      border-radius: 16px;
+      padding: 14px 16px;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      position: relative;
+    }
+
+    .idol-card:hover {
+      background: rgba(255, 209, 102, 0.08);
+      border-color: var(--gold);
+      transform: translateY(-2px);
+    }
+
+    .idol-card.selected {
+      background: linear-gradient(135deg, rgba(84, 11, 14, 0.7) 0%, rgba(247, 127, 0, 0.25) 100%);
+      border: 2px solid var(--gold);
+      box-shadow: 0 0 20px rgba(255, 209, 102, 0.35);
+    }
+
+    .idol-card-tag {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #f77f00;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .idol-card-name {
+      font-family: var(--font-title);
+      font-size: 15px;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+
+    .idol-card-price {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--gold);
+    }
+
+    .purchase-summary-box {
+      background: rgba(247, 127, 0, 0.1);
+      border: 1px solid rgba(247, 127, 0, 0.4);
+      border-radius: 18px;
+      padding: 16px 20px;
+      margin-bottom: 20px;
+    }
+
+    .purchase-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 14px;
+      color: #ffd6a5;
+    }
+
+    .purchase-row.total {
+      border-top: 1px solid rgba(255, 209, 102, 0.3);
+      padding-top: 8px;
+      margin-top: 8px;
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .purchase-actions-row {
+      display: flex;
+      gap: 12px;
+    }
+
+    .btn-purchase {
+      flex: 1;
+      font-family: var(--font-title);
+      font-size: 16px;
+      font-weight: 700;
+      color: #1a080c;
+      background: linear-gradient(135deg, #ffe082 0%, #ffd166 45%, #f77f00 100%);
+      border: none;
+      padding: 14px 24px;
+      border-radius: 25px;
+      cursor: pointer;
+      box-shadow: 0 8px 25px rgba(247, 127, 0, 0.45);
+      transition: all 0.25s ease;
+    }
+
+    .btn-purchase:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(247, 127, 0, 0.65);
+    }
+
+    .btn-purchase:disabled {
+      background: #4a363b;
+      color: #8c7379;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .btn-cancel-shop {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--card-border);
+      color: #ffd6a5;
+      font-size: 15px;
+      font-weight: 600;
+      padding: 14px 22px;
+      border-radius: 25px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-cancel-shop:hover {
+      background: rgba(255, 255, 255, 0.15);
+      color: #fff;
+    }
+
+    /* =========================================================
+       STAGE 2: COMPLETION MODAL
+    ========================================================= */
+    #stage2-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 99;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(8, 3, 5, 0.85);
+      backdrop-filter: blur(10px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s ease;
+    }
+
+    #stage2-modal.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* =========================================================
+       STAGE 3: CEREMONIAL REVEAL OVERLAY & COMPLETION MODAL
+    ========================================================= */
+    #stage3-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 99;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(8, 3, 5, 0.85);
+      backdrop-filter: blur(10px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s ease;
+    }
+
+    #stage3-modal.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    #stage3-reveal-container {
+      position: fixed;
+      bottom: 50px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 85;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      pointer-events: auto;
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    #stage3-reveal-container.hidden {
+      opacity: 0;
+      pointer-events: none;
+      transform: translateX(-50%) translateY(40px);
+    }
+
+    .stage3-reveal-box {
+      background: linear-gradient(135deg, rgba(62, 14, 22, 0.96), rgba(22, 6, 10, 0.96));
+      border: 2px solid var(--gold);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), 0 0 35px rgba(255, 209, 102, 0.3);
+      padding: 18px 32px;
+      border-radius: 28px;
+      text-align: center;
+      width: min(540px, 92vw);
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .stage3-reveal-title {
+      font-family: var(--font-title);
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--gold);
+      letter-spacing: 2px;
+      margin-bottom: 6px;
+    }
+
+    .stage3-reveal-instruction {
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: 1px;
+      margin-bottom: 14px;
+      animation: pulseText 1.5s infinite alternate;
+    }
+
+    @keyframes pulseText {
+      0% { opacity: 0.85; transform: scale(1); }
+      100% { opacity: 1; transform: scale(1.02); color: var(--gold); }
+    }
+
+    .stage3-drag-track {
+      position: relative;
+      width: 100%;
+      height: 48px;
+      background: rgba(0, 0, 0, 0.6);
+      border: 1.5px solid rgba(255, 209, 102, 0.4);
+      border-radius: 24px;
+      overflow: hidden;
+      cursor: grab;
+      touch-action: none;
+    }
+
+    .stage3-drag-track:active {
+      cursor: grabbing;
+    }
+
+    .stage3-drag-fill {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 0%;
+      background: linear-gradient(90deg, rgba(214, 40, 40, 0.85), rgba(247, 127, 0, 0.95), rgba(255, 209, 102, 0.95));
+      border-radius: 24px;
+      transition: width 0.05s linear;
+    }
+
+    .stage3-drag-handle {
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #ffe082, #ffd166, #f77f00);
+      box-shadow: 0 4px 15px rgba(247, 127, 0, 0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      color: #3a080c;
+      font-weight: 900;
+      cursor: grab;
+      transition: transform 0.05s linear;
+    }
+
+    .stage3-drag-handle:active {
+      cursor: grabbing;
+      transform: scale(1.08);
+    }
+
+    .stage3-progress-text {
+      font-family: var(--font-title);
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--gold);
+      margin-top: 10px;
+    }
+
+    #stage3-song-pill {
+      position: fixed;
+      top: 80px;
+      right: 24px;
+      z-index: 80;
+      background: rgba(30, 8, 14, 0.9);
+      border: 1px solid var(--gold);
+      border-radius: 20px;
+      padding: 8px 16px;
+      color: var(--gold);
+      font-size: 13px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+      transition: all 0.2s ease;
+    }
+
+    #stage3-song-pill:hover {
+      transform: scale(1.04);
+      background: rgba(60, 15, 25, 0.95);
+    }
+
+    .stage2-card {
+      width: min(650px, 92vw);
+      padding: 40px 36px;
+      border-radius: 28px;
+      background: linear-gradient(150deg, rgba(62, 15, 22, 0.98) 0%, rgba(18, 6, 9, 0.98) 100%);
+      border: 2px solid var(--gold);
+      box-shadow: 0 30px 90px rgba(0, 0, 0, 0.9), 0 0 60px rgba(255, 209, 102, 0.35);
+      text-align: center;
+    }
+
+    .stage2-title {
+      font-family: var(--font-title);
+      font-size: clamp(24px, 4vw, 34px);
+      font-weight: 900;
+      color: var(--gold);
+      margin-bottom: 8px;
+    }
+
+    .stage2-subtitle {
+      font-size: 16px;
+      color: #ffd6a5;
+      margin-bottom: 24px;
+      font-style: italic;
+    }
+
+    /* =========================================================
+       STAGE 4: PANDAL PREPARATION UI
+    ========================================================= */
+    #stage4-prep-container {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 85;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: min(880px, 95vw);
+      transition: all 0.4s ease;
+    }
+    #stage4-prep-container.hidden {
+      opacity: 0;
+      pointer-events: none;
+      transform: translateX(-50%) translateY(40px);
+    }
+    .prep-box {
+      background: linear-gradient(145deg, rgba(50, 12, 18, 0.96), rgba(18, 5, 8, 0.96));
+      border: 2px solid var(--gold);
+      border-radius: 24px;
+      padding: 16px 20px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.85), 0 0 30px rgba(255, 209, 102, 0.25);
+      width: 100%;
+      text-align: center;
+    }
+    .prep-title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      padding: 0 8px;
+    }
+    .prep-title {
+      font-family: var(--font-title);
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--gold);
+      letter-spacing: 1px;
+    }
+    .prep-count {
+      font-size: 14px;
+      font-weight: 700;
+      color: #ffd6a5;
+      background: rgba(255, 209, 102, 0.15);
+      padding: 4px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 209, 102, 0.3);
+    }
+    .prep-items-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+    @media (max-width: 680px) {
+      .prep-items-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    .prep-item-card {
+      background: rgba(0, 0, 0, 0.5);
+      border: 1.5px solid rgba(255, 209, 102, 0.35);
+      border-radius: 16px;
+      padding: 10px 8px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.2s ease;
+      user-select: none;
+    }
+    .prep-item-card:hover {
+      border-color: var(--gold);
+      transform: translateY(-2px);
+      background: rgba(255, 209, 102, 0.12);
+    }
+    .prep-item-card.placed {
+      background: rgba(46, 196, 182, 0.12);
+      border-color: #2ec4b6;
+      cursor: default;
+    }
+    .prep-item-icon {
+      font-size: 24px;
+    }
+    .prep-item-name {
+      font-size: 12px;
+      font-weight: 600;
+      color: #fff;
+    }
+    .prep-item-status {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--gold);
+      letter-spacing: 0.5px;
+    }
+    .prep-item-card.placed .prep-item-status {
+      color: #52b788;
+    }
+
+    /* =========================================================
+       STAGE 5: GANESH PUJA UI
+    ========================================================= */
+    #stage5-puja-container {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 85;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: min(840px, 95vw);
+      transition: all 0.4s ease;
+    }
+    #stage5-puja-container.hidden {
+      opacity: 0;
+      pointer-events: none;
+      transform: translateX(-50%) translateY(40px);
+    }
+    .puja-box {
+      background: linear-gradient(145deg, rgba(50, 12, 18, 0.97), rgba(18, 5, 8, 0.97));
+      border: 2px solid var(--gold);
+      border-radius: 24px;
+      padding: 16px 20px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.85), 0 0 35px rgba(255, 183, 3, 0.3);
+      width: 100%;
+      text-align: center;
+    }
+    .puja-steps-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+      overflow-x: auto;
+      padding: 8px 4px;
+      margin-bottom: 12px;
+    }
+    .puja-step-pill {
+      flex: 1;
+      min-width: 85px;
+      background: rgba(0,0,0,0.5);
+      border: 1px solid rgba(255, 209, 102, 0.25);
+      border-radius: 14px;
+      padding: 8px 6px;
+      font-size: 11px;
+      color: #ffd6a5;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.2s ease;
+    }
+    .puja-step-pill.active {
+      background: linear-gradient(135deg, rgba(247, 127, 0, 0.35), rgba(255, 209, 102, 0.25));
+      border-color: var(--gold);
+      color: #fff;
+      font-weight: 700;
+      transform: scale(1.04);
+      box-shadow: 0 0 15px rgba(255, 209, 102, 0.4);
+    }
+    .puja-step-pill.completed {
+      background: rgba(82, 183, 136, 0.15);
+      border-color: #52b788;
+      color: #52b788;
+    }
+    .btn-offer-puja {
+      background: linear-gradient(135deg, #f77f00, #d62828);
+      color: #fff;
+      border: 2px solid var(--gold);
+      border-radius: 20px;
+      padding: 12px 28px;
+      font-size: 15px;
+      font-weight: 700;
+      font-family: var(--font-title);
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(214, 40, 40, 0.5);
+      transition: all 0.2s ease;
+    }
+    .btn-offer-puja:hover {
+      transform: scale(1.03);
+      box-shadow: 0 8px 25px rgba(255, 209, 102, 0.6);
+    }
+
+    /* =========================================================
+       STAGE 6: PHYSICAL AARTI UI
+    ========================================================= */
+    #stage6-aarti-container {
+      position: fixed;
+      inset: 0;
+      z-index: 85;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 24px 20px;
+      pointer-events: none;
+      transition: all 0.4s ease;
+    }
+    #stage6-aarti-container.hidden {
+      opacity: 0;
+    }
+    .aarti-top-card {
+      pointer-events: auto;
+      background: linear-gradient(135deg, rgba(62, 15, 22, 0.95), rgba(20, 6, 9, 0.95));
+      border: 2px solid var(--gold);
+      border-radius: 24px;
+      padding: 14px 28px;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.8), 0 0 25px rgba(255, 209, 102, 0.3);
+      max-width: 600px;
+      width: 90%;
+    }
+    .aarti-title {
+      font-family: var(--font-title);
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--gold);
+      margin-bottom: 4px;
+    }
+    .aarti-hint {
+      font-size: 13px;
+      color: #ffd6a5;
+    }
+    .aarti-round-badge {
+      display: inline-block;
+      margin-top: 6px;
+      background: rgba(255, 209, 102, 0.18);
+      border: 1px solid var(--gold);
+      border-radius: 12px;
+      padding: 3px 12px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+    }
+    .aarti-center-interactive {
+      pointer-events: auto;
+      width: min(340px, 70vw);
+      height: min(340px, 70vw);
+      border-radius: 50%;
+      border: 2px dashed rgba(255, 209, 102, 0.45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      cursor: grab;
+      touch-action: none;
+      background: radial-gradient(circle, rgba(255, 183, 3, 0.08) 0%, transparent 70%);
+      box-shadow: 0 0 40px rgba(255, 183, 3, 0.15);
+    }
+    .aarti-center-interactive:active {
+      cursor: grabbing;
+      border-color: var(--gold);
+    }
+    .aarti-center-ring {
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #ffd166 0%, #f77f00 70%, #d62828 100%);
+      box-shadow: 0 0 30px rgba(255, 209, 102, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 38px;
+      color: #3d0c11;
+      animation: aartiGlow 2s infinite alternate;
+    }
+    @keyframes aartiGlow {
+      0% { transform: scale(0.96); box-shadow: 0 0 20px rgba(255, 209, 102, 0.5); }
+      100% { transform: scale(1.04); box-shadow: 0 0 40px rgba(255, 209, 102, 0.9); }
+    }
+    .aarti-drag-pointer {
+      position: absolute;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: #ffd166;
+      border: 2px solid #fff;
+      box-shadow: 0 0 20px #ffd166;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+    }
+    .aarti-bottom-card {
+      pointer-events: auto;
+      background: rgba(20, 6, 9, 0.9);
+      border: 1px solid rgba(255, 209, 102, 0.35);
+      border-radius: 18px;
+      padding: 10px 24px;
+      color: var(--gold);
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    /* Modal common styles for Stages 4, 5, 6, 7 */
+    #stage4-modal, #stage5-modal, #stage6-modal, #stage7-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 99;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(8, 3, 5, 0.88);
+      backdrop-filter: blur(10px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s ease;
+    }
+    #stage4-modal.active, #stage5-modal.active, #stage6-modal.active, #stage7-modal.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- 3D Canvas Container -->
+  <div id="canvas-container"></div>
+
+  <!-- STAGE 0: WELCOME SCREEN -->
+  <div id="welcome-screen">
+    <div class="welcome-card">
+      <div class="om-badge">ॐ</div>
+      <h1 class="game-main-title">GANESHVERSE</h1>
+      <h2 class="game-subtitle">THE FESTIVAL GUARDIAN</h2>
+
+      <div class="game-tagline">
+        "Where Every Obstacle Becomes an Adventure."
+      </div>
+
+      <p class="game-description">
+        Step into an authentic, warm Indian neighborhood during Ganesh Chaturthi.
+        As the festival youth leader, walk the festive street, greet eight devotee families at their decorated homes,
+        collect Chanda, prepare the grand pandal, and perform Lord Ganesha's sacred rituals!
+      </p>
+
+      <!-- Welcome Screen Interactive Guide Tabs -->
+      <div class="guide-tabs-bar" id="welcome-tabs-bar">
+        <button type="button" class="guide-tab-btn active" data-tab-target="pane-how-to-play" id="btn-welcome-tab-play">
+          <span>📖</span> How to Play (7 Stages)
+        </button>
+        <button type="button" class="guide-tab-btn" data-tab-target="pane-festival-rules" id="btn-welcome-tab-rules">
+          <span>📜</span> Sacred Festival Rules
+        </button>
+        <button type="button" class="guide-tab-btn" data-tab-target="pane-controls-guide" id="btn-welcome-tab-controls">
+          <span>⌨️</span> Controls & Keys
+        </button>
+      </div>
+
+      <div class="guide-tab-content">
+        <!-- PANE 1: HOW TO PLAY (7 STAGES) -->
+        <div id="pane-how-to-play" class="guide-pane active">
+          <div class="stage-guide-grid">
+            <!-- Stage 1 -->
+            <div class="stage-guide-card">
+              <div class="stage-guide-top">
+                <span class="stage-guide-step-pill">STAGE 1</span>
+                <span style="font-size: 20px;">🚶 🏡</span>
+              </div>
+              <div class="stage-guide-title">Chanda Yatra (Community Visits)</div>
+              <div class="stage-guide-desc">
+                Walk through the festive neighborhood and locate all 8 devotee family homes (Villas 101 to 108).
+                Approach the families and press <strong>[E]</strong> or click them to greet the elders, invite them to the festival, and receive voluntary <strong>Chanda</strong> contributions plus <strong>Devotion Points</strong>!
+              </div>
+              <div class="stage-guide-tip">
+                <span>💡 Guide Tip:</span> Check the <em>Nearest House Guide</em> compass on your HUD to navigate directly to unvisited families.
+              </div>
+            </div>
+
+            <!-- Stage 2 -->
+            <div class="stage-guide-card">
+              <div class="stage-guide-top">
+                <span class="stage-guide-step-pill">STAGE 2</span>
+                <span style="font-size: 20px;">🗿 ✨</span>
+              </div>
+              <div class="stage-guide-title">Murti Workshop & 3D Inspection</div>
+              <div class="stage-guide-desc">
+                Once all 8 families are invited, visit the master sculptor's workshop. Inspect exquisite 3D Ganesha idols with 360° orbital rotation, compare spiritual features, and use your gathered Chanda funds to purchase Bappa for your community!
+              </div>
+              <div class="stage-guide-tip">
+                <span>💡 Guide Tip:</span> Choose between <em>Shri Bal Ganesha</em> (blooming lotus) or handcrafted <em>Eco Terracotta Ganesha</em> (Shadu Mati).
+              </div>
+            </div>
+
+            <!-- Stage 3 -->
+            <div class="stage-guide-card">
+              <div class="stage-guide-top">
+                <span class="stage-guide-step-pill">STAGE 3</span>
+                <span style="font-size: 20px;">🥁 🚩</span>
+              </div>
+              <div class="stage-guide-title">Shobha Yatra & Sacred Unveiling</div>
+              <div class="stage-guide-desc">
+                Welcome Lord Ganesha home with celebratory dhol-tasha beats. At the grand Mandapam, perform the ceremonial <strong>drag-to-reveal</strong> ritual: swipe the sacred satin veil upward to reveal Bappa’s divine face to the sound of blowing shankhas!
+              </div>
+              <div class="stage-guide-tip">
+                <span>💡 Guide Tip:</span> Click and drag the cloth upward or swipe on touch devices to complete the Agamana ritual.
+              </div>
+            </div>
+
+            <!-- Stage 4 -->
+            <div class="stage-guide-card">
+              <div class="stage-guide-top">
+                <span class="stage-guide-step-pill">STAGE 4</span>
+                <span style="font-size: 20px;">🌸 🪔</span>
+              </div>
+              <div class="stage-guide-title">Pandal Preparation & Decor</div>
+              <div class="stage-guide-desc">
+                Adorn Bappa’s sanctuary with 8 traditional auspicious decorations using festival funds. Place fragrant Marigold Garlands, brass Samai lamps, Mango leaf Torans, sacred Rangoli Kolam, and holy Kalash.
+              </div>
+              <div class="stage-guide-tip">
+                <span>💡 Guide Tip:</span> Place all 8 traditional decorative items to maximize your Pandal Sanctity rating!
+              </div>
+            </div>
+
+            <!-- Stage 5 -->
+            <div class="stage-guide-card">
+              <div class="stage-guide-top">
+                <span class="stage-guide-step-pill">STAGE 5</span>
+                <span style="font-size: 20px;">🥥 🕉️</span>
+              </div>
+              <div class="stage-guide-title">Vedic Ganesh Puja Rituals</div>
+              <div class="stage-guide-desc">
+                Perform the sacred <em>Pancha Upachara</em> rites step-by-step: wave fragrant Dhoop incense, kindle the golden Deepam lamp, apply holy Chandan & Kumkum Tilak, present freshly steamed Modaks, and shower blessed Pushpanjali flowers!
+              </div>
+              <div class="stage-guide-tip">
+                <span>💡 Guide Tip:</span> Reverently complete each ritual offering to deepen spiritual harmony and unlock divine blessings.
+              </div>
+            </div>
+
+            <!-- Stage 6 -->
+            <div class="stage-guide-card">
+              <div class="stage-guide-top">
+                <span class="stage-guide-step-pill">STAGE 6</span>
+                <span style="font-size: 20px;">🔔 🔥</span>
+              </div>
+              <div class="stage-guide-title">Physical Aarti Ceremony</div>
+              <div class="stage-guide-desc">
+                Take the radiant brass camphor Aarti plate! Perform steady <strong>clockwise circular rotations</strong> around Lord Ganesha while temple bells chime in harmony with the sacred chant of <em>Ekadantaya Vakratundaya</em>.
+              </div>
+              <div class="stage-guide-tip">
+                <span>💡 Guide Tip:</span> Keep your circular motion smooth and clockwise to fill the Aarti meter and ring bells in divine rhythm.
+              </div>
+            </div>
+
+            <!-- Stage 7 -->
+            <div class="stage-guide-card" style="grid-column: 1 / -1;">
+              <div class="stage-guide-top">
+                <span class="stage-guide-step-pill" style="background: linear-gradient(135deg, #1b7f79, #2ec4b6);">STAGE 7 (FINALE)</span>
+                <span style="font-size: 20px;">🎊 🙏 🪔</span>
+              </div>
+              <div class="stage-guide-title">Grand Visarjan & Neighborhood Celebration</div>
+              <div class="stage-guide-desc">
+                Rejoice as all 8 neighborhood devotee families reunite together at the illuminated mandapam.
+                Receive Lord Vighnaharta's supreme blessings for health, wisdom, and prosperity, celebrate with Telugu & Sanskrit bhajans, and view your complete Festival Guardian Title and Devotion Score!
+              </div>
+              <div class="stage-guide-tip">
+                <span>💡 Guide Tip:</span> Replay the festival anytime or explore the interactive 3D street with your friends and family!
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PANE 2: SACRED FESTIVAL RULES -->
+        <div id="pane-festival-rules" class="guide-pane">
+          <div class="rules-intro-banner">
+            <strong>📜 Sacred Festival Guardian Code:</strong> Honor sacred tradition, foster neighborhood unity, manage community funds with integrity, and worship Lord Ganesha with pure devotion.
+          </div>
+
+          <div class="rules-guide-grid">
+            <!-- Rule 1 -->
+            <div class="rule-guide-card">
+              <div class="rule-guide-header">
+                <span class="rule-number-badge">RULE 1</span>
+                <span style="font-size: 18px;">🤝</span>
+                <div class="rule-guide-title">The 8-Family Devotion Mandate</div>
+              </div>
+              <div class="rule-guide-body">
+                As the Festival Youth Guardian, you <span class="rule-guide-highlight">must personally visit and invite all 8 neighborhood families</span> before moving to the Murti workshop. No family should be left out of Bappa’s festival. Polite greetings to family elders grant maximum Devotion points and voluntary Chanda contributions.
+              </div>
+            </div>
+
+            <!-- Rule 2 -->
+            <div class="rule-guide-card">
+              <div class="rule-guide-header">
+                <span class="rule-number-badge">RULE 2</span>
+                <span style="font-size: 18px;">💰</span>
+                <div class="rule-guide-title">Sacred Chanda Stewardship</div>
+              </div>
+              <div class="rule-guide-body">
+                Community contributions are a sacred trust. <span class="rule-guide-highlight">Budget your collected Chanda wisely</span> between acquiring your chosen Ganesha idol and decorating the Mandapam. Higher contributions from friendly visits unlock premium decorative offerings and celebratory enhancements.
+              </div>
+            </div>
+
+            <!-- Rule 3 -->
+            <div class="rule-guide-card">
+              <div class="rule-guide-header">
+                <span class="rule-number-badge">RULE 3</span>
+                <span style="font-size: 18px;">🕉️</span>
+                <div class="rule-guide-title">Vedic Ritual Sequence & Reverence</div>
+              </div>
+              <div class="rule-guide-body">
+                Puja rituals must be conducted in the authentic Vedic order: <span class="rule-guide-highlight">Dhoop (Incense) ➔ Deepam (Light) ➔ Tilak (Kumkum/Chandan) ➔ Naivedya (Modaks) ➔ Pushpanjali (Flowers)</span>. Rushing or skipping offerings diminishes ritual purity and sanctity.
+              </div>
+            </div>
+
+            <!-- Rule 4 -->
+            <div class="rule-guide-card">
+              <div class="rule-guide-header">
+                <span class="rule-number-badge">RULE 4</span>
+                <span style="font-size: 18px;">🔄</span>
+                <div class="rule-guide-title">Clockwise Circular Aarti Motion</div>
+              </div>
+              <div class="rule-guide-body">
+                During the Aarti ceremony, the thali must be rotated <span class="rule-guide-highlight">strictly in smooth, clockwise circular motions</span> centered around Bappa’s feet and crown. Counter-clockwise, erratic, or static gestures will stall the devotion meter and temple bells.
+              </div>
+            </div>
+
+            <!-- Rule 5 -->
+            <div class="rule-guide-card">
+              <div class="rule-guide-header">
+                <span class="rule-number-badge">RULE 5</span>
+                <span style="font-size: 18px;">🏡</span>
+                <div class="rule-guide-title">Neighborhood Harmony & Inclusivity</div>
+              </div>
+              <div class="rule-guide-body">
+                The essence of Ganesh Chaturthi is community unity. The Grand Celebration and Visarjan finale can only take place when <span class="rule-guide-highlight">all 8 families from both sides of the street gather united</span> under Bappa’s divine mandapam.
+              </div>
+            </div>
+
+            <!-- Rule 6 -->
+            <div class="rule-guide-card">
+              <div class="rule-guide-header">
+                <span class="rule-number-badge">RULE 6</span>
+                <span style="font-size: 18px;">🎶</span>
+                <div class="rule-guide-title">Sacred Sound & Musical Immersion</div>
+              </div>
+              <div class="rule-guide-body">
+                Sound is the vibrational heartbeat of festival worship. Keep sound enabled to experience authentic synthesized brass temple bells, resonant conch horns, dhol-tasha rhythms, and the devotional masterpiece <span class="rule-guide-highlight">Ekadantaya Vakratundaya</span>.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PANE 3: CONTROLS & SHORTCUTS -->
+        <div id="pane-controls-guide" class="guide-pane">
+          <div class="controls-guide-grid">
+            <!-- Desktop Controls -->
+            <div class="control-group-card">
+              <div class="control-group-title">
+                <span>💻</span> Desktop Keyboard & Mouse
+              </div>
+              <div class="control-row">
+                <span>Move Festival Leader</span>
+                <span><span class="key-badge">W</span> <span class="key-badge">A</span> <span class="key-badge">S</span> <span class="key-badge">D</span> or <span class="key-badge">Arrows</span></span>
+              </div>
+              <div class="control-row">
+                <span>Interact / Talk / Greet</span>
+                <span><span class="key-badge">E</span> or <span class="key-badge">Left Click</span></span>
+              </div>
+              <div class="control-row">
+                <span>Toggle Festival Street Map</span>
+                <span><span class="key-badge">M</span></span>
+              </div>
+              <div class="control-row">
+                <span>Toggle How to Play & Rules</span>
+                <span><span class="key-badge">H</span></span>
+              </div>
+              <div class="control-row">
+                <span>Circular Aarti Motion</span>
+                <span><span class="key-badge">Mouse Drag</span> in Clockwise Circles</span>
+              </div>
+              <div class="control-row">
+                <span>Inspect 3D Murtis</span>
+                <span><span class="key-badge">Click & Drag</span> to rotate 360°</span>
+              </div>
+              <div class="control-row">
+                <span>Toggle Sound & Bells</span>
+                <span><span class="key-badge">Speaker Icon</span> (Top-Right)</span>
+              </div>
+            </div>
+
+            <!-- Mobile & Touch Controls -->
+            <div class="control-group-card">
+              <div class="control-group-title">
+                <span>📱</span> Mobile & Touch Devices
+              </div>
+              <div class="control-row">
+                <span>Movement</span>
+                <span style="color: var(--gold); font-weight: 600;">On-Screen Virtual Touch Joystick</span>
+              </div>
+              <div class="control-row">
+                <span>Talk / Invite Devotees</span>
+                <span style="color: var(--gold); font-weight: 600;">Tap Family Elder or Prompt Button</span>
+              </div>
+              <div class="control-row">
+                <span>Ceremonial Cloth Reveal</span>
+                <span style="color: var(--gold); font-weight: 600;">Swipe / Drag Cloth Upward</span>
+              </div>
+              <div class="control-row">
+                <span>Circular Aarti Ritual</span>
+                <span style="color: var(--gold); font-weight: 600;">Touch & Drag Aarti Plate in Circles</span>
+              </div>
+              <div class="control-row">
+                <span>Map & Guide Navigation</span>
+                <span style="color: var(--gold); font-weight: 600;">Tap Top-Right Quick Action Buttons</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Button -->
+      <div class="welcome-actions">
+        <button id="btn-enter-festival" class="btn-enter-festival">
+          ✨ ENTER FESTIVAL & BEGIN YATRA ✨
+        </button>
+      </div>
+
+      <div style="margin-top: 14px; font-size: 13px; color: #fce1b8; opacity: 0.85;">
+        <span>🔔 Tip: Press <strong>[H]</strong> at any time during gameplay to reopen the Rules & Guide.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- STAGE 1: HUD -->
+  <div id="hud" class="hidden">
+    <div class="hud-header">
+      <div class="hud-title">
+        <span>🐘</span> GANESHVERSE
+      </div>
+      <div id="hud-stage-name" class="hud-stage-chip">Stage 1: Chanda Yatra</div>
+    </div>
+
+    <div class="hud-stats-grid">
+      <div class="hud-stat-box">
+        <div class="hud-stat-label">
+          <span>💰</span> Chanda
+        </div>
+        <div id="hud-chanda-val" class="hud-stat-value gold">₹0</div>
+      </div>
+
+      <div class="hud-stat-box">
+        <div class="hud-stat-label">
+          <span>⭐</span> Devotion Score
+        </div>
+        <div id="hud-score-val" class="hud-stat-value">0</div>
+      </div>
+
+      <div class="hud-stat-box">
+        <div class="hud-stat-label">
+          <span>👀</span> Families Visited
+        </div>
+        <div id="hud-visited-val" class="hud-stat-value gold">0 / 8</div>
+      </div>
+
+      <div class="hud-stat-box">
+        <div class="hud-stat-label">
+          <span>💌</span> Families Invited
+        </div>
+        <div id="hud-families-val" class="hud-stat-value gold">0 / 8</div>
+      </div>
+    </div>
+
+    <div class="hud-objective house-guide" style="margin-bottom: 8px;">
+      <strong>🧭 Nearest House Guide:</strong><br>
+      <span id="hud-guide-text" style="color: var(--gold); font-weight: 600;">Walk forward to Villa 101 (Ravi Family) ➔</span>
+    </div>
+
+    <div class="mandap-quick-stats">
+      <span>💰 Chanda: <strong id="hud-mandap-chanda" style="color: var(--gold);">₹0</strong></span>
+      <span>⭐ Devotion: <strong id="hud-mandap-score" style="color: var(--gold);">0</strong></span>
+    </div>
+
+    <div class="hud-objective">
+      <strong>Current Objective:</strong><br>
+      <span id="hud-objective-text">Visit all 8 devotee families along the street, collect Chanda & invite them for Bappa's festival.</span>
+    </div>
+  </div>
+
+  <!-- Top Right Bar -->
+  <div id="top-right-bar">
+    <button id="btn-show-summary" class="hud-icon-btn" style="display: none; border-color: var(--gold);" title="View Grand Celebration Summary">
+      <span id="summary-icon">🏆</span> <span id="summary-label">Summary</span>
+    </button>
+    <button id="btn-rules-toggle" class="hud-icon-btn">
+      <span id="rules-icon">📜</span> <span id="rules-label">How to Play (H)</span>
+    </button>
+    <button id="btn-map-toggle" class="hud-icon-btn">
+      <span id="map-icon">🗺️</span> <span id="map-label">Festival Map (M)</span>
+    </button>
+    <button id="btn-audio-toggle" class="hud-icon-btn">
+      <span id="audio-icon">🔊</span> <span id="audio-label">Sound On</span>
+    </button>
+    <button id="btn-exit-game" class="hud-icon-btn" style="border-color: rgba(214, 40, 40, 0.55);" title="Exit & Reset Festival">
+      <span id="exit-icon">🚪</span> <span id="exit-label">Exit & Reset</span>
+    </button>
+  </div>
+
+  <!-- Movement Hint -->
+  <div id="controls-hint">
+    <span><span class="key-badge">W</span> <span class="key-badge">A</span> <span class="key-badge">S</span> <span
+        class="key-badge">D</span> / Arrows to Move</span>
+    <span>•</span>
+    <span><span class="key-badge">E</span> or Click to Interact</span>
+  </div>
+
+  <!-- Floating 3D Interaction Prompt -->
+  <div id="interaction-prompt">
+    <span style="font-size: 22px;">🙏</span>
+    <div class="prompt-text">
+      Press <span class="key-badge">E</span> or Click to <span id="prompt-action-verb">Talk to</span> <span id="prompt-family-name">Family</span>
+    </div>
+  </div>
+
+  <!-- Family Dialogue Modal -->
+  <div id="dialogue-modal">
+    <div class="dialogue-card">
+      <div id="dialogue-family-title" class="dialogue-family-title">🙏 Ravi Family</div>
+      <div id="dialogue-family-subtitle" class="dialogue-family-subtitle">Devotee Residence #1</div>
+
+      <div class="dialogue-speech-box">
+        <p id="dialogue-line-1" class="speech-line">"Namaste! Happy Ganesh Chaturthi!"</p>
+        <p id="dialogue-line-2" class="speech-line">"Thank you for organizing the festival and inviting our family."</p>
+        <p id="dialogue-line-3" class="speech-line">"Here is our humble contribution for Bappa's celebration."</p>
+      </div>
+
+      <div class="chanda-offer-pill">
+        <span>💰 Contribution:</span>
+        <span id="dialogue-amount">₹100</span>
+      </div>
+
+      <button id="btn-collect-chanda" class="btn-collect-chanda">
+        🙏 Accept Contribution & Invite Family
+      </button>
+    </div>
+  </div>
+
+  <!-- STAGE 1 COMPLETION MODAL -->
+  <div id="stage1-modal">
+    <div class="stage1-card">
+      <div class="celebration-icon">🎉</div>
+      <h2 class="stage1-title">CHANDA COLLECTION COMPLETE</h2>
+      <p class="stage1-subtitle">All 8 neighborhood families have been warmly invited!</p>
+
+      <div class="completion-stats">
+        <div class="stat-badge">
+          <div class="stat-badge-label">Total Chanda</div>
+          <div id="stat-total-chanda" class="stat-badge-value">₹0</div>
+        </div>
+        <div class="stat-badge">
+          <div class="stat-badge-label">Devotion Score</div>
+          <div id="stat-total-score" class="stat-badge-value">0</div>
+        </div>
+        <div class="stat-badge">
+          <div class="stat-badge-label">Devotees</div>
+          <div class="stat-badge-value">8 Families</div>
+        </div>
+      </div>
+
+      <div class="next-stage-box">
+        <strong>NEXT: Ganesh Murti Shop</strong>
+        You have gathered enough community blessings and funds. Next, you will head to the workshop to select Lord
+        Ganesha's idol!
+      </div>
+
+      <button id="btn-stage1-continue" class="btn-stage-complete">
+        ✨ Stage 1 Complete — Ready for Next Stage
+      </button>
+    </div>
+  </div>
+
+  <!-- STAGE 2: FESTIVAL MAP MODAL -->
+  <div id="festival-map-modal">
+    <div class="map-card">
+      <div class="modal-header-row">
+        <div class="hud-title"><span>🗺️</span> FESTIVAL MAP & STREET GUIDE</div>
+        <button id="btn-close-map" class="modal-close-btn">✕</button>
+      </div>
+
+      <div class="map-canvas-wrapper">
+        <canvas id="festival-map-canvas" width="820" height="380"></canvas>
+      </div>
+
+      <div class="map-controls-row">
+        <div class="map-destination-info">
+          <strong>Current Objective:</strong> <span id="map-objective-text">Visit the Ganesh Idol Shop and choose Bappa's Murti.</span><br>
+          <strong>Destination:</strong> <span id="map-dest-name" style="color: var(--gold); font-weight: 700;">Ganesha Murti Workshop</span> • <span id="map-dest-dist">--</span>
+        </div>
+        <button id="btn-set-destination-shop" class="btn-map-nav">🚩 Navigate to Ganesh Shop</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STAGE 2: GANESHA MURTI WORKSHOP & 3D INSPECTION MODAL -->
+  <div id="murti-shop-modal">
+    <div class="shop-card">
+      <div class="shop-header">
+        <div class="shop-title-box">
+          <h2>🐘 GANESHA MURTI WORKSHOP</h2>
+          <p>Inspect each real 3D sculpted Murti and select Lord Ganesha for your community pandal.</p>
+        </div>
+        <div class="shop-chanda-chip">
+          <span>💰 Available Chanda:</span>
+          <span id="shop-chanda-amount">₹0</span>
+        </div>
+        <button id="btn-close-shop-x" class="modal-close-btn" style="margin-left: 12px;">✕</button>
+      </div>
+
+      <div class="shop-layout-grid">
+        <!-- Left: 3D Real-time Murti Inspector -->
+        <div class="inspection-container">
+          <div class="inspect-controls">
+            <button id="btn-rotate-left" class="btn-inspect-tool" title="Rotate Left">↺ Left</button>
+            <button id="btn-rotate-right" class="btn-inspect-tool" title="Rotate Right">↻ Right</button>
+            <button id="btn-reset-view" class="btn-inspect-tool" title="Reset View">⟲ Reset</button>
+          </div>
+          <canvas id="idol-inspect-canvas"></canvas>
+          <div class="inspect-hint-bar">
+            <span>🖱️ Drag to rotate 360° • Scroll to zoom</span>
+            <span id="inspect-model-title" style="color: var(--gold); font-weight: 600;">Shri Bal Ganesha</span>
+          </div>
+        </div>
+
+        <!-- Right: Idol Choices & Purchase -->
+        <div>
+          <div class="idol-cards-grid">
+            <div class="idol-card selected" data-idol="bal">
+              <div class="idol-card-tag">Youthful & Beloved</div>
+              <div class="idol-card-name">1. Shri Bal Ganesha</div>
+              <div class="idol-card-price">₹300</div>
+            </div>
+
+            <div class="idol-card" data-idol="eco">
+              <div class="idol-card-tag">100% Shadu Mati</div>
+              <div class="idol-card-name">2. Eco Ganesha</div>
+              <div class="idol-card-price">₹400</div>
+            </div>
+          </div>
+
+          <div class="purchase-summary-box">
+            <div class="purchase-row">
+              <span>Ganesha Murti:</span>
+              <span id="summary-idol-name" style="color: var(--gold); font-weight: 700;">Shri Bal Ganesha</span>
+            </div>
+            <div class="purchase-row">
+              <span>Contribution Cost:</span>
+              <span id="summary-idol-cost">₹300</span>
+            </div>
+            <div class="purchase-row">
+              <span>Available Chanda:</span>
+              <span id="summary-avail-chanda">₹1250</span>
+            </div>
+            <div class="purchase-row total">
+              <span>Remaining Chanda:</span>
+              <span id="summary-remain-chanda" style="color: var(--gold);">₹950</span>
+            </div>
+          </div>
+
+          <div class="purchase-actions-row">
+            <button id="btn-purchase-murti" class="btn-purchase">
+              🙏 Purchase Murti
+            </button>
+            <button id="btn-cancel-shop" class="btn-cancel-shop">
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STAGE 2 COMPLETION MODAL -->
+  <div id="stage2-modal">
+    <div class="stage2-card">
+      <div class="celebration-icon">🙏</div>
+      <h2 class="stage2-title">MURTI SELECTED</h2>
+      <p class="stage2-subtitle">"Bappa has found his place in GaneshVerse."</p>
+
+      <div class="completion-stats">
+        <div class="stat-badge">
+          <div class="stat-badge-label">Selected Murti</div>
+          <div id="stat-selected-murti" class="stat-badge-value" style="font-size: 19px;">Shri Bal Ganesha</div>
+        </div>
+        <div class="stat-badge">
+          <div class="stat-badge-label">Chanda Remaining</div>
+          <div id="stat-stage2-chanda" class="stat-badge-value">₹950</div>
+        </div>
+        <div class="stat-badge">
+          <div class="stat-badge-label">Devotee Status</div>
+          <div class="stat-badge-value" style="font-size: 19px; color: #52b788;">Blessed ✅</div>
+        </div>
+      </div>
+
+      <div class="next-stage-box">
+        <strong>NEXT OBJECTIVE: Take the selected Ganesha Murti to the festival mandap</strong>
+        Lord Vighnaharta's sacred idol is now prepared. Gather the devotees and lead the auspicious procession to the festival pandal!
+      </div>
+
+      <button id="btn-stage2-continue" class="btn-stage-complete">
+        ✨ CONTINUE TO ARRIVAL
+      </button>
+    </div>
+  </div>
+  <!-- STAGE 3: CEREMONIAL DRAG-TO-REVEAL CLOTH OVERLAY -->
+  <div id="stage3-reveal-container" class="hidden">
+    <div class="stage3-reveal-box">
+      <div class="stage3-reveal-title">🪔 CEREMONIAL UNVEILING 🪔</div>
+      <div class="stage3-reveal-instruction">DRAG THE SACRED CLOTH → TO REVEAL BAPPA</div>
+      <div class="stage3-drag-track" id="stage3-drag-track">
+        <div class="stage3-drag-fill" id="stage3-drag-fill"></div>
+        <div class="stage3-drag-handle" id="stage3-drag-handle">
+          <span class="drag-handle-icon">ॐ</span>
+        </div>
+      </div>
+      <div class="stage3-progress-text" id="stage3-progress-text">REVEAL: 0%</div>
+    </div>
+  </div>
+
+  <!-- STAGE 3: GANESHA ARRIVAL COMPLETION MODAL -->
+  <div id="stage3-modal">
+    <div class="stage2-card">
+      <div class="celebration-icon">🐘</div>
+      <h2 class="stage2-title">GANESHA HAS ARRIVED</h2>
+      <p class="stage2-subtitle">"Bappa has arrived at the GaneshVerse festival mandap."</p>
+
+      <div class="completion-stats">
+        <div class="stat-badge">
+          <div class="stat-badge-label">Selected Murti</div>
+          <div id="stat-stage3-selected-murti" class="stat-badge-value" style="font-size: 19px;">Shri Bal Ganesha</div>
+        </div>
+        <div class="stat-badge">
+          <div class="stat-badge-label">Chanda Remaining</div>
+          <div id="stat-stage3-chanda" class="stat-badge-value">₹950</div>
+        </div>
+        <div class="stat-badge">
+          <div class="stat-badge-label">Devotees Present</div>
+          <div class="stat-badge-value" style="font-size: 19px; color: #52b788;">8 / 8 Blessed 🙏</div>
+        </div>
+      </div>
+
+      <div class="next-stage-box">
+        <strong>NEXT OBJECTIVE: Prepare the festival mandap</strong>
+        Bappa is ready for the festival preparations. Gather sacred torans, floral malas, brass samai lamps, and altar cushions to prepare the mandap!
+      </div>
+
+      <button id="btn-stage3-continue" class="btn-stage-complete">
+        ✨ CONTINUE TO PANDAL PREPARATION
+      </button>
+    </div>
+  </div>
+
+  <!-- Stage 3 Floating Devotional Song Toggle -->
+  <div id="stage3-song-pill" style="display: none;">
+    <span>🎵</span> <span id="stage3-song-title">Jai Jai Ganesha</span>
+  </div>
+
+  <!-- STAGE 4: PANDAL PREPARATION CONTROLS -->
+  <div id="stage4-prep-container" class="hidden">
+    <div class="prep-box">
+      <div class="prep-title-row">
+        <span class="prep-title">🌸 FESTIVAL PANDAL DECORATION 🌸</span>
+        <span id="prep-count" class="prep-count">0 / 8 PLACED</span>
+      </div>
+      <div class="prep-items-grid">
+        <div class="prep-item-card" data-item="toran">
+          <span class="prep-item-icon">🌿</span>
+          <span class="prep-item-name">Mango Torans</span>
+          <span class="prep-item-status" id="prep-status-toran">TAP TO PLACE</span>
+        </div>
+        <div class="prep-item-card" data-item="garlands">
+          <span class="prep-item-icon">🌼</span>
+          <span class="prep-item-name">Marigold Malas</span>
+          <span class="prep-item-status" id="prep-status-garlands">TAP TO PLACE</span>
+        </div>
+        <div class="prep-item-card" data-item="samaiLamps">
+          <span class="prep-item-icon">🪔</span>
+          <span class="prep-item-name">Brass Samai Lamps</span>
+          <span class="prep-item-status" id="prep-status-samaiLamps">TAP TO PLACE</span>
+        </div>
+        <div class="prep-item-card" data-item="cushions">
+          <span class="prep-item-icon">🛋️</span>
+          <span class="prep-item-name">Velvet Cushions</span>
+          <span class="prep-item-status" id="prep-status-cushions">TAP TO PLACE</span>
+        </div>
+        <div class="prep-item-card" data-item="fruits">
+          <span class="prep-item-icon">🍎</span>
+          <span class="prep-item-name">Fresh Fruits Basket</span>
+          <span class="prep-item-status" id="prep-status-fruits">TAP TO PLACE</span>
+        </div>
+        <div class="prep-item-card" data-item="kalash">
+          <span class="prep-item-icon">🥥</span>
+          <span class="prep-item-name">Sacred Kalash</span>
+          <span class="prep-item-status" id="prep-status-kalash">TAP TO PLACE</span>
+        </div>
+        <div class="prep-item-card" data-item="modaks">
+          <span class="prep-item-icon">🍬</span>
+          <span class="prep-item-name">Steamed Modaks</span>
+          <span class="prep-item-status" id="prep-status-modaks">TAP TO PLACE</span>
+        </div>
+        <div class="prep-item-card" data-item="incense">
+          <span class="prep-item-icon">🕯️</span>
+          <span class="prep-item-name">Incense Agarbatti</span>
+          <span class="prep-item-status" id="prep-status-incense">TAP TO PLACE</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STAGE 4 COMPLETION MODAL -->
+  <div id="stage4-modal">
+    <div class="stage2-card">
+      <div class="celebration-icon">🌸</div>
+      <h2 class="stage2-title">PANDAL PREPARATION COMPLETE</h2>
+      <p class="stage2-subtitle">"The festival mandap is gloriously adorned and ready for Lord Ganesha's sacred Puja."</p>
+
+      <div class="completion-stats">
+        <div class="stat-badge">
+          <div class="stat-badge-label">Decorations</div>
+          <div class="stat-badge-value">8 / 8 Placed ✨</div>
+        </div>
+        <div class="stat-badge">
+          <div class="stat-badge-label">Mandap Aura</div>
+          <div class="stat-badge-value" style="color: var(--gold);">Divine 🪔</div>
+        </div>
+        <div class="stat-badge">
+          <div class="stat-badge-label">Devotion Score</div>
+          <div id="stat-stage4-score" class="stat-badge-value">450</div>
+        </div>
+      </div>
+
+      <div class="next-stage-box">
+        <strong>NEXT: Sacred Ganesh Puja</strong>
+        Gather the holy offerings and perform the auspicious 7-step Puja ceremony for Lord Vighnaharta!
+      </div>
+
+      <button id="btn-stage4-continue" class="btn-stage-complete">
+        ✨ CONTINUE TO PUJA
+      </button>
+    </div>
+  </div>
+
+  <!-- STAGE 5: GANESH PUJA CONTROLS -->
+  <div id="stage5-puja-container" class="hidden">
+    <div class="puja-box">
+      <div class="prep-title-row">
+        <span class="prep-title">🙏 SACRED GANESH PUJA OFFERINGS 🙏</span>
+        <span id="puja-count" class="prep-count">0 / 7 OFFERED</span>
+      </div>
+      <div class="puja-steps-row">
+        <div class="puja-step-pill active" id="puja-step-0"><span>🪔</span><span>1. Diya</span></div>
+        <div class="puja-step-pill" id="puja-step-1"><span>🌿</span><span>2. Durva</span></div>
+        <div class="puja-step-pill" id="puja-step-2"><span>🌼</span><span>3. Flowers</span></div>
+        <div class="puja-step-pill" id="puja-step-3"><span>🍎</span><span>4. Fruits</span></div>
+        <div class="puja-step-pill" id="puja-step-4"><span>🥥</span><span>5. Coconut</span></div>
+        <div class="puja-step-pill" id="puja-step-5"><span>🍬</span><span>6. Modaks</span></div>
+        <div class="puja-step-pill" id="puja-step-6"><span>🕯️</span><span>7. Incense</span></div>
+      </div>
+      <button id="btn-offer-current" class="btn-offer-puja">
+        🙏 Offer Sacred Item to Bappa (Press E)
+      </button>
+    </div>
+  </div>
+
+  <!-- STAGE 5 COMPLETION MODAL -->
+  <div id="stage5-modal">
+    <div class="stage2-card">
+      <div class="celebration-icon">🪔</div>
+      <h2 class="stage2-title">GANESH PUJA COMPLETE</h2>
+      <p class="stage2-subtitle">"All 7 sacred offerings have been offered to Lord Vighnaharta with pure devotion."</p>
+
+      <div class="completion-stats">
+        <div class="stat-badge">
+          <div class="stat-badge-label">Puja Offerings</div>
+          <div class="stat-badge-value">7 / 7 Sacred 🙏</div>
+        </div>
+        <div class="stat-badge">
+          <div class="stat-badge-label">Bappa's Grace</div>
+          <div class="stat-badge-value" style="color: #52b788;">Sanctified ✨</div>
+        </div>
+        <div class="stat-badge">
+          <div class="stat-badge-label">Devotion Score</div>
+          <div id="stat-stage5-score" class="stat-badge-value">700</div>
+        </div>
+      </div>
+
+      <div class="next-stage-box">
+        <strong>NEXT: Physical Aarti Ceremony</strong>
+        Take the glowing brass Aarti Thali with camphor flames and wave it clockwise around Lord Ganesha!
+      </div>
+
+      <button id="btn-stage5-continue" class="btn-stage-complete">
+        ✨ CONTINUE TO AARTI
+      </button>
+    </div>
+  </div>
+
+  <!-- STAGE 6: PHYSICAL AARTI CONTROLS -->
+  <div id="stage6-aarti-container" class="hidden">
+    <div class="aarti-top-card">
+      <div class="aarti-title">🪔 SACRED AARTI CEREMONY 🪔</div>
+      <div class="aarti-hint">Drag the brass Aarti Thali in clockwise circles around Lord Ganesha</div>
+      <div id="aarti-round-text" class="aarti-round-badge">AARTI ROUND: 1 / 3 (0%)</div>
+    </div>
+
+    <div class="aarti-center-interactive" id="aarti-drag-zone">
+      <div class="aarti-center-ring">ॐ</div>
+      <div class="aarti-drag-pointer" id="aarti-pointer">🪔</div>
+    </div>
+
+    <div class="aarti-bottom-card">
+      <span>🎵 Devotional Aarti & Temple Bells Resonating</span>
+    </div>
+  </div>
+
+  <!-- STAGE 6 COMPLETION MODAL -->
+  <div id="stage6-modal">
+    <div class="stage2-card">
+      <div class="celebration-icon">✨</div>
+      <h2 class="stage2-title">AARTI COMPLETE 🙏</h2>
+      <p class="stage2-subtitle">"The divine Aarti flames have illuminated Lord Ganesha and blessed the whole community."</p>
+
+      <div class="completion-stats">
+        <div class="stat-badge">
+          <div class="stat-badge-label">Aarti Rounds</div>
+          <div class="stat-badge-value">3 / 3 Complete 🪔</div>
+        </div>
+        <div class="stat-badge">
+          <div class="stat-badge-label">Maha Prasad</div>
+          <div class="stat-badge-value" style="color: var(--gold);">Blessed 🍬</div>
+        </div>
+        <div class="stat-badge">
+          <div class="stat-badge-label">Devotion Score</div>
+          <div id="stat-stage6-score" class="stat-badge-value">950</div>
+        </div>
+      </div>
+
+      <div class="next-stage-box">
+        <strong>NEXT: Grand Community Celebration</strong>
+        All 8 neighborhood families have returned to the mandap to celebrate with Bappa!
+      </div>
+
+      <button id="btn-stage6-continue" class="btn-stage-complete">
+        ✨ CONTINUE TO GRAND CELEBRATION
+      </button>
+    </div>
+  </div>
+
+  <!-- STAGE 7: GRAND CELEBRATION MODAL -->
+  <div id="stage7-modal">
+    <div class="stage2-card" style="max-width: 720px;">
+      <div class="celebration-icon">🎊 🐘 🪔</div>
+      <h2 class="stage2-title">GANESHVERSE GRAND CELEBRATION</h2>
+      <p class="stage2-subtitle">"All 8 neighborhood families have returned to celebrate with Bappa!"</p>
+
+      <div class="completion-stats">
+        <div class="stat-badge">
+          <div class="stat-badge-label">Families Invited</div>
+          <div class="stat-badge-value" style="color: #52b788;">8 / 8 United 🙏</div>
+        </div>
+        <div class="stat-badge">
+          <div class="stat-badge-label">Chanda Collected</div>
+          <div id="stat-stage7-chanda" class="stat-badge-value">₹1,150</div>
+        </div>
+        <div class="stat-badge">
+          <div class="stat-badge-label">Selected Murti</div>
+          <div id="stat-stage7-murti" class="stat-badge-value" style="font-size: 17px;">Shri Bal Ganesha</div>
+        </div>
+        <div class="stat-badge">
+          <div class="stat-badge-label">Total Devotion</div>
+          <div id="stat-stage7-score" class="stat-badge-value" style="color: var(--gold);">1,200</div>
+        </div>
+        <div class="stat-badge" style="grid-column: span 2; background: rgba(255, 209, 102, 0.12); border-color: var(--gold);">
+          <div class="stat-badge-label">🎵 Pandal Celebration Song</div>
+          <div id="stat-stage7-song" class="stat-badge-value" style="font-size: 15px; color: var(--gold);">
+            Ekadantaya Vakratundaya (Ganeshay Dheemahi) — Shankar Mahadevan
+          </div>
+        </div>
+      </div>
+
+      <div class="next-stage-box" style="font-size: 15px; line-height: 1.6; text-align: center;">
+        <strong style="font-size: 17px; color: var(--gold); display: block; margin-bottom: 6px;">🙏 HAPPY GANESH CHATURTHI 🙏</strong>
+        "May Lord Vighnaharta remove all obstacles from your path and bless you and your loved ones with eternal happiness, peace, and prosperity."
+      </div>
+
+      <div style="display: flex; gap: 12px; justify-content: center; margin-top: 20px; flex-wrap: wrap;">
+        <button id="btn-see-celebration-scene" class="btn-stage-complete" style="flex: 1; min-width: 200px; padding: 14px 20px; background: linear-gradient(135deg, #f77f00 0%, #ffd166 100%); color: #1a080c; font-weight: 800; box-shadow: 0 4px 20px rgba(247, 127, 0, 0.5);">
+          👁️ See Celebration View (2nd Image)
+        </button>
+        <button id="btn-exit-reset-final" class="btn-stage-complete" style="flex: 1; min-width: 170px; padding: 14px 18px; background: linear-gradient(135deg, #d62828, #9b1d20);">
+          🚪 Exit to Reset Game
+        </button>
+        <button id="btn-play-again" class="btn-stage-complete" style="flex: 1; min-width: 150px; padding: 14px 18px;">
+          🔄 Play Again
+        </button>
+        <button id="btn-view-map-final" class="btn-stage-complete" style="flex: 1; min-width: 150px; padding: 14px 18px; background: linear-gradient(135deg, #1b7f79, #2ec4b6);">
+          🗺️ View Map
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stage 7 Floating Return to Summary Button -->
+  <button id="btn-floating-summary" class="hud-icon-btn" style="display: none; position: fixed; bottom: 26px; left: 50%; transform: translateX(-50%); z-index: 70; padding: 14px 30px; border-radius: 40px; font-size: 15px; font-weight: 800; font-family: var(--font-title); background: linear-gradient(135deg, rgba(84, 11, 14, 0.96), rgba(247, 127, 0, 0.95)); border: 2px solid var(--gold); box-shadow: 0 10px 35px rgba(0,0,0,0.8), 0 0 25px rgba(255, 209, 102, 0.5); cursor: pointer; color: #fff;">
+    🏆 Open Celebration Summary Card
+  </button>
+
+  <!-- IN-GAME HOW TO PLAY & SACRED RULES MODAL -->
+  <div id="rules-modal">
+    <div class="rules-modal-card">
+      <div class="rules-modal-header">
+        <div class="rules-modal-title">
+          <span>📜</span> GANESHVERSE GUIDE & RULES
+        </div>
+        <button id="btn-close-rules-modal" class="btn-modal-close-icon" aria-label="Close Guide">✕</button>
+      </div>
+
+      <!-- Modal Tabs Bar -->
+      <div class="guide-tabs-bar" id="modal-tabs-bar">
+        <button type="button" class="guide-tab-btn active" data-tab-target="modal-pane-how-to-play" id="btn-modal-tab-play">
+          <span>📖</span> How to Play (7 Stages)
+        </button>
+        <button type="button" class="guide-tab-btn" data-tab-target="modal-pane-festival-rules" id="btn-modal-tab-rules">
+          <span>📜</span> Sacred Festival Rules
+        </button>
+        <button type="button" class="guide-tab-btn" data-tab-target="modal-pane-controls-guide" id="btn-modal-tab-controls">
+          <span>⌨️</span> Controls Guide
+        </button>
+      </div>
+
+      <div class="guide-tab-content">
+        <!-- PANE 1: HOW TO PLAY (7 STAGES) -->
+        <div id="modal-pane-how-to-play" class="guide-pane active">
+          <div class="stage-guide-grid">
+            <div class="stage-guide-card">
+              <div class="stage-guide-top">
+                <span class="stage-guide-step-pill">STAGE 1</span>
+                <span style="font-size: 20px;">🚶 🏡</span>
+              </div>
+              <div class="stage-guide-title">Chanda Yatra (Community Visits)</div>
+              <div class="stage-guide-desc">
+                Walk through the festive neighborhood and locate all 8 devotee family homes (Villas 101 to 108).
+                Approach the families and press <strong>[E]</strong> or click them to greet the elders, invite them to the festival, and receive voluntary <strong>Chanda</strong> contributions plus <strong>Devotion Points</strong>!
+              </div>
+              <div class="stage-guide-tip">
+                <span>💡 Guide Tip:</span> Check the <em>Nearest House Guide</em> compass on your HUD to navigate directly to unvisited families.
+              </div>
+            </div>
+
+            <div class="stage-guide-card">
+              <div class="stage-guide-top">
+                <span class="stage-guide-step-pill">STAGE 2</span>
+                <span style="font-size: 20px;">🗿 ✨</span>
+              </div>
+              <div class="stage-guide-title">Murti Workshop & 3D Inspection</div>
+              <div class="stage-guide-desc">
+                Once all 8 families are invited, visit the master sculptor's workshop. Inspect exquisite 3D Ganesha idols with 360° orbital rotation, compare spiritual features, and use your gathered Chanda funds to purchase Bappa for your community!
+              </div>
+              <div class="stage-guide-tip">
+                <span>💡 Guide Tip:</span> Choose between <em>Shri Bal Ganesha</em> (blooming lotus) or handcrafted <em>Eco Terracotta Ganesha</em> (Shadu Mati).
+              </div>
+            </div>
+
+            <div class="stage-guide-card">
+              <div class="stage-guide-top">
+                <span class="stage-guide-step-pill">STAGE 3</span>
+                <span style="font-size: 20px;">🥁 🚩</span>
+              </div>
+              <div class="stage-guide-title">Shobha Yatra & Sacred Unveiling</div>
+              <div class="stage-guide-desc">
+                Welcome Lord Ganesha home with celebratory dhol-tasha beats. At the grand Mandapam, perform the ceremonial <strong>drag-to-reveal</strong> ritual: swipe the sacred satin veil upward to reveal Bappa’s divine face to the sound of blowing shankhas!
+              </div>
+              <div class="stage-guide-tip">
+                <span>💡 Guide Tip:</span> Click and drag the cloth upward or swipe on touch devices to complete the Agamana ritual.
+              </div>
+            </div>
+
+            <div class="stage-guide-card">
+              <div class="stage-guide-top">
+                <span class="stage-guide-step-pill">STAGE 4</span>
+                <span style="font-size: 20px;">🌸 🪔</span>
+              </div>
+              <div class="stage-guide-title">Pandal Preparation & Decor</div>
+              <div class="stage-guide-desc">
+                Adorn Bappa’s sanctuary with 8 traditional auspicious decorations using festival funds. Place fragrant Marigold Garlands, brass Samai lamps, Mango leaf Torans, sacred Rangoli Kolam, and holy Kalash.
+              </div>
+              <div class="stage-guide-tip">
+                <span>💡 Guide Tip:</span> Place all 8 traditional decorative items to maximize your Pandal Sanctity rating!
+              </div>
+            </div>
+
+            <div class="stage-guide-card">
+              <div class="stage-guide-top">
+                <span class="stage-guide-step-pill">STAGE 5</span>
+                <span style="font-size: 20px;">🥥 🕉️</span>
+              </div>
+              <div class="stage-guide-title">Vedic Ganesh Puja Rituals</div>
+              <div class="stage-guide-desc">
+                Perform the sacred <em>Pancha Upachara</em> rites step-by-step: wave fragrant Dhoop incense, kindle the golden Deepam lamp, apply holy Chandan & Kumkum Tilak, present freshly steamed Modaks, and shower blessed Pushpanjali flowers!
+              </div>
+              <div class="stage-guide-tip">
+                <span>💡 Guide Tip:</span> Reverently complete each ritual offering to deepen spiritual harmony and unlock divine blessings.
+              </div>
+            </div>
+
+            <div class="stage-guide-card">
+              <div class="stage-guide-top">
+                <span class="stage-guide-step-pill">STAGE 6</span>
+                <span style="font-size: 20px;">🔔 🔥</span>
+              </div>
+              <div class="stage-guide-title">Physical Aarti Ceremony</div>
+              <div class="stage-guide-desc">
+                Take the radiant brass camphor Aarti plate! Perform steady <strong>clockwise circular rotations</strong> around Lord Ganesha while temple bells chime in harmony with the sacred chant of <em>Ekadantaya Vakratundaya</em>.
+              </div>
+              <div class="stage-guide-tip">
+                <span>💡 Guide Tip:</span> Keep your circular motion smooth and clockwise to fill the Aarti meter and ring bells in divine rhythm.
+              </div>
+            </div>
+
+            <div class="stage-guide-card" style="grid-column: 1 / -1;">
+              <div class="stage-guide-top">
+                <span class="stage-guide-step-pill" style="background: linear-gradient(135deg, #1b7f79, #2ec4b6);">STAGE 7 (FINALE)</span>
+                <span style="font-size: 20px;">🎊 🙏 🪔</span>
+              </div>
+              <div class="stage-guide-title">Grand Visarjan & Neighborhood Celebration</div>
+              <div class="stage-guide-desc">
+                Rejoice as all 8 neighborhood devotee families reunite together at the illuminated mandapam.
+                Receive Lord Vighnaharta's supreme blessings for health, wisdom, and prosperity, celebrate with Telugu & Sanskrit bhajans, and view your complete Festival Guardian Title and Devotion Score!
+              </div>
+              <div class="stage-guide-tip">
+                <span>💡 Guide Tip:</span> Replay the festival anytime or explore the interactive 3D street with your friends and family!
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PANE 2: SACRED FESTIVAL RULES -->
+        <div id="modal-pane-festival-rules" class="guide-pane">
+          <div class="rules-intro-banner">
+            <strong>📜 Sacred Festival Guardian Code:</strong> Honor sacred tradition, foster neighborhood unity, manage community funds with integrity, and worship Lord Ganesha with pure devotion.
+          </div>
+
+          <div class="rules-guide-grid">
+            <div class="rule-guide-card">
+              <div class="rule-guide-header">
+                <span class="rule-number-badge">RULE 1</span>
+                <span style="font-size: 18px;">🤝</span>
+                <div class="rule-guide-title">The 8-Family Devotion Mandate</div>
+              </div>
+              <div class="rule-guide-body">
+                As the Festival Youth Guardian, you <span class="rule-guide-highlight">must personally visit and invite all 8 neighborhood families</span> before moving to the Murti workshop. No family should be left out of Bappa’s festival. Polite greetings to family elders grant maximum Devotion points and voluntary Chanda contributions.
+              </div>
+            </div>
+
+            <div class="rule-guide-card">
+              <div class="rule-guide-header">
+                <span class="rule-number-badge">RULE 2</span>
+                <span style="font-size: 18px;">💰</span>
+                <div class="rule-guide-title">Sacred Chanda Stewardship</div>
+              </div>
+              <div class="rule-guide-body">
+                Community contributions are a sacred trust. <span class="rule-guide-highlight">Budget your collected Chanda wisely</span> between acquiring your chosen Ganesha idol and decorating the Mandapam. Higher contributions from friendly visits unlock premium decorative offerings and celebratory enhancements.
+              </div>
+            </div>
+
+            <div class="rule-guide-card">
+              <div class="rule-guide-header">
+                <span class="rule-number-badge">RULE 3</span>
+                <span style="font-size: 18px;">🕉️</span>
+                <div class="rule-guide-title">Vedic Ritual Sequence & Reverence</div>
+              </div>
+              <div class="rule-guide-body">
+                Puja rituals must be conducted in the authentic Vedic order: <span class="rule-guide-highlight">Dhoop (Incense) ➔ Deepam (Light) ➔ Tilak (Kumkum/Chandan) ➔ Naivedya (Modaks) ➔ Pushpanjali (Flowers)</span>. Rushing or skipping offerings diminishes ritual purity and sanctity.
+              </div>
+            </div>
+
+            <div class="rule-guide-card">
+              <div class="rule-guide-header">
+                <span class="rule-number-badge">RULE 4</span>
+                <span style="font-size: 18px;">🔄</span>
+                <div class="rule-guide-title">Clockwise Circular Aarti Motion</div>
+              </div>
+              <div class="rule-guide-body">
+                During the Aarti ceremony, the thali must be rotated <span class="rule-guide-highlight">strictly in smooth, clockwise circular motions</span> centered around Bappa’s feet and crown. Counter-clockwise, erratic, or static gestures will stall the devotion meter and temple bells.
+              </div>
+            </div>
+
+            <div class="rule-guide-card">
+              <div class="rule-guide-header">
+                <span class="rule-number-badge">RULE 5</span>
+                <span style="font-size: 18px;">🏡</span>
+                <div class="rule-guide-title">Neighborhood Harmony & Inclusivity</div>
+              </div>
+              <div class="rule-guide-body">
+                The essence of Ganesh Chaturthi is community unity. The Grand Celebration and Visarjan finale can only take place when <span class="rule-guide-highlight">all 8 families from both sides of the street gather united</span> under Bappa’s divine mandapam.
+              </div>
+            </div>
+
+            <div class="rule-guide-card">
+              <div class="rule-guide-header">
+                <span class="rule-number-badge">RULE 6</span>
+                <span style="font-size: 18px;">🎶</span>
+                <div class="rule-guide-title">Sacred Sound & Musical Immersion</div>
+              </div>
+              <div class="rule-guide-body">
+                Sound is the vibrational heartbeat of festival worship. Keep sound enabled to experience authentic synthesized brass temple bells, resonant conch horns, dhol-tasha rhythms, and the devotional masterpiece <span class="rule-guide-highlight">Ekadantaya Vakratundaya</span>.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PANE 3: CONTROLS & SHORTCUTS -->
+        <div id="modal-pane-controls-guide" class="guide-pane">
+          <div class="controls-guide-grid">
+            <div class="control-group-card">
+              <div class="control-group-title">
+                <span>💻</span> Desktop Keyboard & Mouse
+              </div>
+              <div class="control-row">
+                <span>Move Festival Leader</span>
+                <span><span class="key-badge">W</span> <span class="key-badge">A</span> <span class="key-badge">S</span> <span class="key-badge">D</span> or <span class="key-badge">Arrows</span></span>
+              </div>
+              <div class="control-row">
+                <span>Interact / Talk / Greet</span>
+                <span><span class="key-badge">E</span> or <span class="key-badge">Left Click</span></span>
+              </div>
+              <div class="control-row">
+                <span>Toggle Festival Street Map</span>
+                <span><span class="key-badge">M</span></span>
+              </div>
+              <div class="control-row">
+                <span>Toggle How to Play & Rules</span>
+                <span><span class="key-badge">H</span></span>
+              </div>
+              <div class="control-row">
+                <span>Circular Aarti Motion</span>
+                <span><span class="key-badge">Mouse Drag</span> in Clockwise Circles</span>
+              </div>
+              <div class="control-row">
+                <span>Inspect 3D Murtis</span>
+                <span><span class="key-badge">Click & Drag</span> to rotate 360°</span>
+              </div>
+              <div class="control-row">
+                <span>Toggle Sound & Bells</span>
+                <span><span class="key-badge">Speaker Icon</span> (Top-Right)</span>
+              </div>
+            </div>
+
+            <div class="control-group-card">
+              <div class="control-group-title">
+                <span>📱</span> Mobile & Touch Devices
+              </div>
+              <div class="control-row">
+                <span>Movement</span>
+                <span style="color: var(--gold); font-weight: 600;">On-Screen Virtual Touch Joystick</span>
+              </div>
+              <div class="control-row">
+                <span>Talk / Invite Devotees</span>
+                <span style="color: var(--gold); font-weight: 600;">Tap Family Elder or Prompt Button</span>
+              </div>
+              <div class="control-row">
+                <span>Ceremonial Cloth Reveal</span>
+                <span style="color: var(--gold); font-weight: 600;">Swipe / Drag Cloth Upward</span>
+              </div>
+              <div class="control-row">
+                <span>Circular Aarti Ritual</span>
+                <span style="color: var(--gold); font-weight: 600;">Touch & Drag Aarti Plate in Circles</span>
+              </div>
+              <div class="control-row">
+                <span>Map & Guide Navigation</span>
+                <span style="color: var(--gold); font-weight: 600;">Tap Top-Right Quick Action Buttons</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: center; gap: 14px; margin-top: 18px; flex-wrap: wrap;">
+        <button id="btn-resume-festival" class="btn-stage-complete" style="padding: 14px 34px; font-size: 15px;">
+          🙏 Resume Festival
+        </button>
+        <button id="btn-modal-exit-reset" class="btn-stage-complete" style="padding: 14px 28px; font-size: 15px; background: linear-gradient(135deg, #d62828, #9b1d20);">
+          🚪 Exit & Reset Game
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast-msg"></div>
+
+  <!-- Dedicated Authentic YouTube Audio Streamer for Ekadantaya Vakratundaya -->
+  <iframe id="festival-yt-player"
+    src="https://www.youtube-nocookie.com/embed/ym4o5F8ncY0?enablejsapi=1&autoplay=0&controls=0&loop=1&playlist=ym4o5F8ncY0"
+    allow="autoplay"
+    style="position: fixed; width: 1px; height: 1px; bottom: 0; left: 0; opacity: 0.001; pointer-events: none; border: none; z-index: -1;">
+  </iframe>
+
+  <!-- Main JavaScript Entry Point -->
+  <script type="module" src="/src/js/main.js"></script>
+</body>
+
+</html>
